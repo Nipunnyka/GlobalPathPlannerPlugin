@@ -1,3 +1,10 @@
+/*
+KinoDAStar is supposed to change the vstartx and vstarty speds, you cant control
+them from GloabalPlanner class you need to rewrite the DWA local planner for that
+
+also pls check if minx and miny values are corrent in verify_node()
+*/
+
 // Including general libraries
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,10 +63,11 @@ using std::string;
 #define KinoPathPlanner
 
 struct cells {
-	int currentCell;
-	float fCost;
+	int cellIndex;
+	//double cost;
 
 };
+
 
 namespace KinoPlanner{
     class KinoPathPlanner : public nav_core::BaseGlobalPlanner{
@@ -81,6 +89,17 @@ namespace KinoPlanner{
         int getIndex(int i,int j){return (i*width)+j;}
         int getRow(int index){return index/width;}
         int getCol(int index){return index%width;}
+        double calc_heuristic(node n1, node n2);
+        bool verify_node(node nodec, node parent);
+        coordinates KinoDAStar(int startCell, int goalCell);
+        vector <int> pathFinder(int startCell, int goalCell);
+        vector<int> pathplanner(int startCell, int goalCell);
+        void call_once(float& vx, float& vy);
+        vector <int> getNeighbour (int CellID);
+        bool isValid(int startCell,int goalCell);
+        bool isFree(int CellID); //returns true if the cell is Free
+        bool isFree(int i, int j); 
+
 
         bool initialized_;
         float startX, startY; //start pos of rover
@@ -89,6 +108,41 @@ namespace KinoPlanner{
         double resolution;
         float vstartx, vstarty; //starting velocity in x and y dirn (linear)
         float vgoalx, vgoaly; //goal velocity in x and y dirn (linear)
+        float robot_radius;
 
-    }
-}
+        class coordinates
+         {
+            public:
+            int cellIndex;
+            double cost;
+            coordinates(int cellIndex, double cost){
+            this->cellIndex=cellIndex;
+            this->cost=cost;
+        };
+        class node
+        {
+        public:
+          coordinates cell;//gcost;
+          int p_index;
+          double vx,vy;
+        
+          node()
+          {
+        	cell.cellIndex=0; cell.cost=0;
+            vx=0;vy=0;
+          }
+          node(coordinates cell,double vx,double vy, int p_index)
+          {
+            this->cell = cell;
+            this->p_index=p_index;
+            this->vx=0;
+            this->vy=0;
+          }
+        
+        };
+            
+      
+    };
+      
+};
+#endif

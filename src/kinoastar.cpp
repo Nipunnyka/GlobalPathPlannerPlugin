@@ -44,6 +44,7 @@ namespace KinoPlanner{
     {
         initialize(name, costmap_ros);
     }
+	
 }
 
 void KinoPathPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
@@ -62,7 +63,24 @@ void KinoPathPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* cos
 
         width=costmap_->getSizeInCellsX();
         height=costmap_->getSizeInCellsX();
-        mapSize = width*height;
+        mapSize = width*height;value =0;
+
+
+		OGM = new bool [mapSize]; 
+    	for (unsigned int iy = 0; iy < costmap_->getSizeInCellsY(); iy++)
+    	{	
+    	 	for (unsigned int ix = 0; ix < costmap_->getSizeInCellsX(); ix++)
+    	 	{
+    	 	 unsigned int cost = static_cast<int>(costmap_->getCost(ix, iy));
+    	 	 //cout<<cost;
+    	 	 if (cost == 0)
+    	 	   OGM[iy*width+ix]=true;
+    	 	 else
+    	 	   OGM[iy*width+ix]=false;
+			}
+		}	
+
+
 
         // may need to enter start pos here
 
@@ -121,7 +139,7 @@ bool KinoPathPlanner::ROSmakePlan(const geometry_msgs::PoseStamped& start, const
     	if (isValid(startCell, goalCell)){
 		vector<int> bestPath;
 		bestPath.clear();
-		bestPath = KinoAStar(startCell, goalCell);
+		bestPath = pathplanner(startCell, goalCell);
 		if(bestPath.size()>0){
 			for (int i = 0; i < bestPath.size(); i++){
 				float x = 0.0;
@@ -228,7 +246,7 @@ bool KinoPathPlanner::isValid(int startCell,int goalCell){  //CHECK TO WRITE HEL
 				}
 			}
 		}
-	}
+	}for(pppp:: const_iterator i = openset.begin(); i!=openset.end(); ++i)
 
 return isvalid;
 }
@@ -276,19 +294,223 @@ void KinoPathPlanner::call_once(float& vx, float& vy)
 
 //WRITE ISFREE FUNC
 
-vector <int> KinoPathPlanner::KinoAStar(int startCell, int goalCell){
-    vector<int> bestPath;
-    float g_score[mapSize]; //DECLARE MAPSIZE PEHLE
+ bool  KinoPathPlanner::isFree(int i, int j){
+  	int CellID = getCellIndex(i, j);
+ 	return OGM[CellID];
 
-    //manan used  ros::init(argc,argv,"listener"); which I am skipping hoping it doesnt make things go south
+ } 
 
-    call_once(vstartx, vstarty);
+ bool  KinoPathPlanner::isFree(int CellID){
+ 	return OGM[CellID];
+ } 
+
+vector<int> KinoPathPlanner::pathplanner(int startCell, int goalCell){
+	vector<int> bestPath;
+	bestPath.clear();	
+	//manan used  ros::init(argc,argv,"listener"); which I am skipping hoping it doesnt make things go south
+	call_once(vstartx, vstarty);
     vgoalx=0; vgoaly=0;
 
-    
+	bestPath=pathFinder(int startCell, goalCell);
+
+	return bestPath;
+}
+
+vector <int> KinoPathPlanner::pathFinder(int startCell, int goalCell){
+    vector<int> bestPath;
+	vector<int> emptyPath;
+    //robot_Radius=.105 for burger, .17 for waffle
+    robot_radius=0.17;
+
+	OPL.insert(startCell);
+	bestPath.push_back(startCell);
+	
+	cout<<"My startCell::goalCell::vstartx::vstarty::vgoalx::vgoaly::"<<startCell<<"::"<<goalCell<<"::"<<vstartx<<"::"<<vstarty<<"::"<<vgoalx<<"::"<<vgoaly<"/n";
+	
+	while(1){
+		value++;
+		coordinates ggkk(67,67);
+
+		ggkk=KinoDAStar(startCell, goalCell);
+		//kinodastar needs to return new goalCell and should change vstartx and vstarty
+		startCell=ggkk.cellIndex;
+		cout<<"go to "<<startCell<<" you will reach with vx and vy "<<vstartx", "<<vstarty<<endl;
+		bestPath.push_back(startCell);
+
+
+		if(startCell==goalCell)
+			break;
+		
+		reviseObstacles(); //this means move to new start Cell, I havent written this function yet IMPORTANT!
+
+	}
+	printf("reached the target!");	
+	return bestPath;
+}
+
+coordinates KinoPathPlanner::KinoDAStar(int startCell, int goalCell){
+	coordinates startcooridnate=coordinates(startCell, 0.0);
+	coordinates goalcoordinate=coordinates(goalCell, 0.0);
+	node nstart=node(startcoordinate, -1, vstartx, vstarty);
+	node ngoal=node(goalcoordinate, -1, vgoalx, vgoaly);
+	
+	typedef std::tr1::unordered_map<int, node> pppp;
+	pppp openset;
+	pppp closedset;
+	node curnode=nstart;
+	openset[curnode.cell.cellIndex]=(curnode);
+	int testing=0;
+
+	while(testing<2)
+	{
+		double min_temp=INT_MAX;
+		int cid=0;
+		for(pppp:: const_iterator i = openset.begin(); i!=openset.end(); ++i)
+		{
+			double rr=(i->second).cell.cost + calc_heuristic(ngoal, i->second);
+			if(rr<min_temp){
+				min_temp=rr;
+				cid = (i->second).cell.cellIndex;
+			}
+		}
+		curnode=openset[cid];
+
+		vstartx=curnode.vx;
+		vstarty=curnode.vy;
+		coordinates returnthis=coordinates(curnode.cell.cellIndex, curnode.cell.cost);
+
+		if(curnode.cell.cellIndex==ngoal.cell.cellIndex){
+			ngoal.p_index=curnode.p_index;
+			ngoal.cost=current.cost;
+			break;
+		}
+		openset.erase(cid);
+		closedset[cid]=current;
+		for(int vi=-3; vi<=3; vi++) //DEFINE vi vj here
+		for(int vj=-3; vj<=3; vj++)
+		{
+			double cost = pow((pow((vi-current.vx),2)+pow((vj-current.vy),2)),0.5);
+			
+			float curx=0.0;
+			float cury=0.0;
+			int index=curnode.cell.cellIndex;
+			convertToCoordinate(index, curx,cury);
+			int dummyindex=convertToCellIndex(curx + vi*1, cury +vj*1);
+			coordinates dummycoord=coordinates(dummyindex, cost);
+
+			node dummy=node(dummycoord, curnode.vx+vi, curnode.vy+vj, cid);
+
+			if(closedset.find(dummyindex)!=closedset.end())
+				continue;
+			if(verify_node(dummy, curnode))//HELLO write verify node here
+				continue;
+			if(openset.find(dummyindex)==openset.end())
+			{
+				openset[dummyindex]=dummy;
+			}
+			else{
+				if(openset[dummyindex].cell.cost>=dummy.cell.cost)
+					openset[dummyindex]=dummy;
+			}
+
+		}
+		testing++;
+
+	}
+	
+	return returnthis;
+}
+
+bool KinoPathPlanner::verify_node(node nodec, node parent)
+{
+	float tempx, tempy;
+	convertToCoordinate(nodec.cell.cellIndex, tempx, tempy);
+	if(!isInsideMap(tempx, tempy))
+		return 0;
+	//check if this is free node
+	if(!isFree(nodec.cell.cellIndex))
+		return 0;
+	
+	//I am putting vel x=[-3, 3]
+	//and vel y=[-3,3]
+	
+	if(!((nodec.vx<3 && nodec.vx>-3)|| (nodec.vy>-3 && nodec.vx<3)))
+		return 0;
+	
+	double px, py, curx, cury;
+	convertToCoordinate(nodec.cell.cellIndex, curx, cury);
+	convertToCoordinate(parent.cell.cellIndex, px, py);
+
+	if(curx==px){
+		double smally=min(cury, py);
+		double bigy=max(cury,py);
+
+		//assuming origin to be minimum pos and origin+size to be max
+		for(int i=smally; i<=(int)bigy; i++){
+			//minx=0; miny=0 i have replaced these values for minx and miny through in the original program since we are working im map frame;
+			int index=convertToCellIndex(curx, i)
+			if(!isFree(index)){
+				return 0;
+			}
+		}
+	}
+	if(cury==py){
+		double smallx=min(curx,px);
+		doublebigx=max(curx, px);
+		for(int i=smallx; i<=(int)bigx; i++){
+			int index=convertToCellIndex(i, cury);
+			if(!isfree(index))
+				return 0;
+		}
+
+		if(cury!=py && curx!=px){
+			if(curx>px){
+				for(int i=(int)px; i<=(int)curx; i++)
+				{
+					double y=(((int)curx-px)*(int)((double)i -px)/(int)(cury-py))+py;
+					int temp_y=(int)y;
+					if(temp_y-y)==0)
+					{
+						int index=convertToCellIndex(i, temp_y);
+						if(!isFree(index)){
+							return 0;
+						}
+					}
+				}
+			}
+
+		}
+
+		else if(curx<px)
+		{
+			for(int i=(int)curx; i<=(int)<=px; i++)
+				{
+					double y=(((int)(px-curx)*(int)((double)i -curx)/(int)(cury-py))+py;
+					int temp_y=(int)y;
+					if(temp_y-y)==0)
+					{
+						int index=convertToCellIndex(i, temp_y);
+						if(!isFree(index)){
+							return 0;
+						}
+					}
+				}
+		}
+
+	}
+	return 1;
 
 }
 
+double KinoPathPlanner::calc_heuristic(node n1, node n2)
+{
+    double w = 1.0;  //# weight of heuristic
+	float n1x, n2x, n1y, n2y;
+	convertToCoordinate(n1.cell.cellIndex, n1x, n1y);
+	convertToCoordinates(n2.cell.cellIndex, n2x, n2y);
+    double d = w * sqrt((n1x - n2x)*(n1x - n2x) + (n1y - n2y)*(n1y - n2y));
+    return d;
+}
 
 
 

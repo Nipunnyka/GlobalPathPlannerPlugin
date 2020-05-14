@@ -6,14 +6,14 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h> 
+#include <netdb.h>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <string>
 
 
-#include "/home/nipunika/path_planner/src/kinoastar.h"
+#include "kinoastar.h"
 
 
 #include <pluginlib/class_list_macros.h>
@@ -44,7 +44,7 @@ namespace KinoPlanner{
     {
         initialize(name, costmap_ros);
     }
-	
+
 }
 
 void KinoPathPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
@@ -66,9 +66,9 @@ void KinoPathPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* cos
         mapSize = width*height;value =0;
 
 
-		OGM = new bool [mapSize]; 
+		OGM = new bool [mapSize];
     	for (unsigned int iy = 0; iy < costmap_->getSizeInCellsY(); iy++)
-    	{	
+    	{
     	 	for (unsigned int ix = 0; ix < costmap_->getSizeInCellsX(); ix++)
     	 	{
     	 	 unsigned int cost = static_cast<int>(costmap_->getCost(ix, iy));
@@ -78,7 +78,7 @@ void KinoPathPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* cos
     	 	 else
     	 	   OGM[iy*width+ix]=false;
 			}
-		}	
+		}
 
 
 
@@ -106,7 +106,7 @@ bool KinoPathPlanner::ROSmakePlan(const geometry_msgs::PoseStamped& start, const
 		costmap_ros_->getGlobalFrameID().c_str(), goal.header.frame_id.c_str());
 		return false;
 	}
-    
+
 	tf::Stamped < tf::Pose > goal_tf;
 	tf::Stamped < tf::Pose > start_tf;
 
@@ -179,7 +179,7 @@ bool KinoPathPlanner::ROSmakePlan(const geometry_msgs::PoseStamped& start, const
 			return false;
 		}
 	}
-	
+
 	else{
 		ROS_WARN("Not valid start or goal");
 		return false;
@@ -206,22 +206,22 @@ vector <int> KinoPathPlanner::getNeighbour (int CellID){
 
 bool KinoPathPlanner::isValid(int startCell,int goalCell){  //CHECK TO WRITE HELPER FUNCTION
 	bool isvalid=true;
-	
+
 	bool isFreeStartCell=isFree(startCell);
 	bool isFreeGoalCell=isFree(goalCell);
-	
+
 	if (startCell==goalCell){
-		cout << "The Start and the Goal cells are the same..." << endl; 
+		cout << "The Start and the Goal cells are the same..." << endl;
 		isvalid = false;
 	}
-	
+
 	else{
-		
+
 		if(!isFreeStartCell && !isFreeGoalCell){
 			cout << "The start and the goal cells are obstacle positions..." << endl;
 			isvalid = false;
 		}
-		
+
 		else{
 			if(!isFreeStartCell){
 				cout << "The start is an obstacle..." << endl;
@@ -298,15 +298,15 @@ void KinoPathPlanner::call_once(float& vx, float& vy)
   	int CellID = getCellIndex(i, j);
  	return OGM[CellID];
 
- } 
+ }
 
  bool  KinoPathPlanner::isFree(int CellID){
  	return OGM[CellID];
- } 
+ }
 
 vector<int> KinoPathPlanner::pathplanner(int startCell, int goalCell){
 	vector<int> bestPath;
-	bestPath.clear();	
+	bestPath.clear();
 	//manan used  ros::init(argc,argv,"listener"); which I am skipping hoping it doesnt make things go south
 	call_once(vstartx, vstarty);
     vgoalx=0; vgoaly=0;
@@ -324,9 +324,9 @@ vector <int> KinoPathPlanner::pathFinder(int startCell, int goalCell){
 
 	OPL.insert(startCell);
 	bestPath.push_back(startCell);
-	
+
 	cout<<"My startCell::goalCell::vstartx::vstarty::vgoalx::vgoaly::"<<startCell<<"::"<<goalCell<<"::"<<vstartx<<"::"<<vstarty<<"::"<<vgoalx<<"::"<<vgoaly<"/n";
-	
+
 	while(1){
 		value++;
 		coordinates ggkk(67,67);
@@ -340,11 +340,11 @@ vector <int> KinoPathPlanner::pathFinder(int startCell, int goalCell){
 
 		if(startCell==goalCell)
 			break;
-		
+
 		reviseObstacles(); //this means move to new start Cell, I havent written this function yet IMPORTANT!
 
 	}
-	printf("reached the target!");	
+	printf("reached the target!");
 	return bestPath;
 }
 
@@ -353,7 +353,7 @@ coordinates KinoPathPlanner::KinoDAStar(int startCell, int goalCell){
 	coordinates goalcoordinate=coordinates(goalCell, 0.0);
 	node nstart=node(startcoordinate, -1, vstartx, vstarty);
 	node ngoal=node(goalcoordinate, -1, vgoalx, vgoaly);
-	
+
 	typedef std::tr1::unordered_map<int, node> pppp;
 	pppp openset;
 	pppp closedset;
@@ -390,7 +390,7 @@ coordinates KinoPathPlanner::KinoDAStar(int startCell, int goalCell){
 		for(int vj=-3; vj<=3; vj++)
 		{
 			double cost = pow((pow((vi-current.vx),2)+pow((vj-current.vy),2)),0.5);
-			
+
 			float curx=0.0;
 			float cury=0.0;
 			int index=curnode.cell.cellIndex;
@@ -417,7 +417,7 @@ coordinates KinoPathPlanner::KinoDAStar(int startCell, int goalCell){
 		testing++;
 
 	}
-	
+
 	return returnthis;
 }
 
@@ -430,13 +430,13 @@ bool KinoPathPlanner::verify_node(node nodec, node parent)
 	//check if this is free node
 	if(!isFree(nodec.cell.cellIndex))
 		return 0;
-	
+
 	//I am putting vel x=[-3, 3]
 	//and vel y=[-3,3]
-	
+
 	if(!((nodec.vx<3 && nodec.vx>-3)|| (nodec.vy>-3 && nodec.vx<3)))
 		return 0;
-	
+
 	double px, py, curx, cury;
 	convertToCoordinate(nodec.cell.cellIndex, curx, cury);
 	convertToCoordinate(parent.cell.cellIndex, px, py);
@@ -511,9 +511,3 @@ double KinoPathPlanner::calc_heuristic(node n1, node n2)
     double d = w * sqrt((n1x - n2x)*(n1x - n2x) + (n1y - n2y)*(n1y - n2y));
     return d;
 }
-
-
-
-
-
-

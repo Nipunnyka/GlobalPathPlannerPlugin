@@ -30,22 +30,21 @@ float c_y = 0;
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(KinoPlanner::KinoPathPlanner, nav_core::BaseGlobalPlanner)
 
-namespace KinoPlanner{
-    //Default
-    KinoPathPlanner::KinoPathPlanner(){
+    KinoPlanner::KinoPathPlanner::KinoPathPlanner()
+    {
 
     }
 
-    KinoPathPlanner::KinoPathPlanner(ros::NodeHandle &nh)
+    KinoPlanner::KinoPathPlanner::KinoPathPlanner(ros::NodeHandle &nh)
     {
         ROSNodeHandle=nh;
     }
-    KinoPathPlanner::KinoPathPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
+    KinoPlanner::KinoPathPlanner::KinoPathPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
     {
         initialize(name, costmap_ros);
     }
 
-}
+
 
 void KinoPathPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
 {

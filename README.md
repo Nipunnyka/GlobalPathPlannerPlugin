@@ -1,5 +1,5 @@
-# GlobalPathPlannerPlugin
-Path Planner Plugin for turtlebot3 using KinoDynamic A Star in ROS melodic
+# GlobalPathPlannerPlugin 
+I am rewriting Path Planner Plugin for turtlebot3 using KinoDynamic A Star in ROS melodic which is the only way to change the default global path planning algorithm.
 
 ## what to do from here?
 1. registering the plugin and making the respective launch file for gazebo (follow http://wiki.ros.org/navigation/Tutorials/Writing%20A%20Global%20Path%20Planner%20As%20Plugin%20in%20ROS)

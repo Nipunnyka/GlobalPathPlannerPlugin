@@ -70,15 +70,16 @@ struct cells {
 
 
 namespace KinoPlanner{
-    class KinoPathPlanner : public nav_core::BaseGlobalPlanner{
-        public:
+  class KinoPathPlanner {
+	public:
         KinoPathPlanner();
+	      KinoPathPlanner(ros::NodeHandle &nh);
         KinoPathPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
 
         // Overriden classes from interface nav_core::BaseGlobalPlanner
         void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
         bool makePlan(const geometry_msgs::PoseStamped& start,const geometry_msgs::PoseStamped& goal,std::vector<geometry_msgs::PoseStamped>& plan);
-        
+
         //Base Functions for Planner
         bool isInsideMap(float x, float y);
         int convertToCellIndex(float x, float y);
@@ -98,7 +99,7 @@ namespace KinoPlanner{
         vector <int> getNeighbour (int CellID);
         bool isValid(int startCell,int goalCell);
         bool isFree(int CellID); //returns true if the cell is Free
-        bool isFree(int i, int j); 
+        bool isFree(int i, int j);
 
 
         bool initialized_;
@@ -125,7 +126,7 @@ namespace KinoPlanner{
           coordinates cell;//gcost;
           int p_index;
           double vx,vy;
-        
+
           node()
           {
         	cell.cellIndex=0; cell.cost=0;
@@ -138,11 +139,11 @@ namespace KinoPlanner{
             this->vx=0;
             this->vy=0;
           }
-        
+
         };
-            
-      
+
+
     };
-      
+
 };
 #endif
